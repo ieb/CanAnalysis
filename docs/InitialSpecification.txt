@@ -1,0 +1,31 @@
+# CanAnalysis Utility Specifiation
+
+I want build a utility to analyse Can bus packets conforming to NMEA2000 packet structures to identify problems with how devices on the bus are interacting. Specifically how devices perform address claim and send and respond to ISO messages. I am less interested in the navigational data that each device is sending at this time. The data will come from input files captured using candump /dev/can0 | candump2analyse of the form below.
+
+Each line contains a single packet, multiple lines contain fast packets from the same address following the fast packet protocol.
+
+	2026-08-15-16:33:55.364,2,129026,30,255,8,02,fc,ff,ff,ff,ff,ff,ff
+	                                          ----------------------- packet bytes hex encoded
+	                                        - packet length
+	                                    --- destination can address
+	                                 -- source can address   
+	                          ------ pgn
+	                        - priority
+	----------------------- timestamp                        
+
+
+PGNs that will most likely reveal the structure of the bus, address resolution and identify devices that are failing to startup and claim addresses correcty causing excess traffic on the bus and impact on other devices.
+
+* 59904 ISO Request
+* 60928 ISO Address Claim
+* 126464 Device PGN TX and RX Lists 
+* 126996 Device product informaton
+* 126993 Heatbeat
+
+
+The utility should be a simple page web application I can load the file into for analysis (using browser local storage). It should show a timeline of activity on the bus with a pointer that can be moved. There should be a list of devices on the bus detected at the time the pointer is pointing to. If parts of canboatjs (link below) can be used in the browser then that should be used, but at this stage I want to focus on he technical health of the devices and bus rather than the contents of data messages sent by devices (ie less interested in Navigational information)
+
+Sources of information
+
+* canboat utilitities https://github.com/canboat/canboat (checked out in /Users/ieb/timefields/nmea2000/canboat ) and in JS form https://github.com/canboat/canboatjs (/Users/ieb/timefields/nmea2000/canboatjs )
+* https://canboat.github.io/canboat/canboat.html PGN definitions. (saved in /Users/ieb/timefields/PlatformIO/Projects/CanAnalysis/docs/canboat.html), also PGN definitions in yaml form under /Users/ieb/timefields/nmea2000/canboat/database
