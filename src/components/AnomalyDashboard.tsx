@@ -93,7 +93,7 @@ export const AnomalyDashboard: React.FC<AnomalyDashboardProps> = ({
       {filtered.length === 0 ? (
         <div className="flex items-center justify-center gap-2 p-8 text-center text-emerald-400 text-xs bg-slate-950/40 rounded-xl border border-slate-800/60">
           <CheckCircle2 className="h-4 w-4" />
-          <span>No anomalies detected matching the current filter!</span>
+          <span>No anomalies to display.</span>
         </div>
       ) : (
         <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">

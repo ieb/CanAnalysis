@@ -141,7 +141,9 @@ export const DeviceMatrix: React.FC<DeviceMatrixProps> = ({
       {/* Device Cards Grid */}
       {filteredDevices.length === 0 ? (
         <div className="p-8 text-center text-slate-400 text-xs bg-slate-950/40 rounded-xl border border-slate-800/60">
-          No devices match the current filter criteria at this timestamp.
+          {deviceList.length === 0
+            ? 'No CAN devices to display. Open a log file to begin analysis.'
+            : 'No devices match the current filter criteria at this timestamp.'}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

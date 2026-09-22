@@ -139,6 +139,13 @@ export const PacketInspector: React.FC<PacketInspectorProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-900 text-slate-300">
+            {filteredPackets.length === 0 && (
+              <tr>
+                <td colSpan={9} className="px-3 py-8 text-center font-sans text-xs text-slate-400">
+                  No CAN packets to display. Open a log file to populate the packet stream.
+                </td>
+              </tr>
+            )}
             {filteredPackets.map((pkt) => {
               const desc = getPgnDescription(pkt.pgn);
               const isPointerMatch = Math.abs(pkt.timestampMs - currentMs) < 100;

@@ -59,7 +59,8 @@ export const ToolbarSettings: React.FC<ToolbarSettingsProps> = ({
             <select
               value={focusedDevice ? `addr_${focusedDevice.address}` : ''}
               onChange={(e) => onSelectFocusDeviceKey(e.target.value)}
-              className="flex-1 rounded-xl bg-slate-950 px-3 py-2 text-xs font-mono text-cyan-200 border border-slate-800 focus:outline-none focus:border-cyan-500 shadow-inner"
+              disabled={deviceList.length === 0}
+              className="flex-1 rounded-xl bg-slate-950 px-3 py-2 text-xs font-mono text-cyan-200 border border-slate-800 focus:outline-none focus:border-cyan-500 shadow-inner disabled:cursor-not-allowed disabled:text-slate-500"
             >
               <option value="">-- All Devices (No Target Focus) --</option>
               {focusTargets.map((target) => (

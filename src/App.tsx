@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Navbar } from './components/Navbar';
 import { TimelineControls } from './components/TimelineControls';
 import { ToolbarSettings } from './components/ToolbarSettings';
@@ -7,15 +7,17 @@ import { AnomalyDashboard } from './components/AnomalyDashboard';
 import { PacketInspector } from './components/PacketInspector';
 import { parseLogContent } from './services/logParser';
 import { runBusAnalysis, AnalysisResult } from './services/analysisEngine';
-import { saveDataset, getDataset } from './services/storage';
+import { saveDataset } from './services/storage';
 import { CanPacket, DeviceFocusTarget, N2kDevice } from './types/n2k';
-import { Activity, Cpu, AlertTriangle, Layers, Sparkles } from 'lucide-react';
+import { Activity, Cpu, AlertTriangle, Layers, Sparkles, Upload } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [selectedFileName, setSelectedFileName] = useState<string>('startup3.log');
+  const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [rawLogText, setRawLogText] = useState<string>('');
   const [parsedPackets, setParsedPackets] = useState<CanPacket[]>([]);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult>(() =>
+    runBusAnalysis([], '', 0, 20),
+  );
   const [currentMs, setCurrentMs] = useState<number>(0);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [activeView, setActiveView] = useState<'matrix' | 'anomalies' | 'stream'>('matrix');
@@ -39,40 +41,6 @@ export const App: React.FC = () => {
     setAnalysisResult(result);
     return result;
   };
-
-  // Load dataset (preloaded or uploaded)
-  const loadDatasetByName = async (name: 'startup3.log' | 'startup2.log') => {
-    setIsAnalyzing(true);
-    setSelectedFileName(name);
-    setTimeWindow(null);
-    try {
-      const response = await fetch(`${import.meta.env.BASE_URL}datasets/${name}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
-      }
-      const rawText = await response.text();
-      setRawLogText(rawText);
-
-      const packets = parseLogContent(rawText);
-      setParsedPackets(packets);
-
-      const result = updateBusAnalysis(packets, name, rawText.length, trafficThresholdPct, focusedDevice?.address, null);
-      if (result.packets.length > 0) {
-        setCurrentMs(result.packets[0].timestampMs);
-      }
-
-      await saveDataset(name, name, rawText.length, rawText, result);
-    } catch (err) {
-      console.error('Error loading dataset:', err);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  // Initial load
-  useEffect(() => {
-    loadDatasetByName('startup3.log');
-  }, []);
 
   const handleFileUpload = async (file: File) => {
     setIsAnalyzing(true);
@@ -196,14 +164,13 @@ export const App: React.FC = () => {
   // Full dataset start and end timestamps
   const fullStartMs = parsedPackets[0]?.timestampMs || 0;
   const fullEndMs = parsedPackets[parsedPackets.length - 1]?.timestampMs || 1000;
+  const hasData = parsedPackets.length > 0;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       <Navbar
-        summary={analysisResult?.summary || null}
-        selectedFileName={selectedFileName}
+        summary={hasData ? analysisResult.summary : null}
         onFileUpload={handleFileUpload}
-        onLoadPreloaded={loadDatasetByName}
         isAnalyzing={isAnalyzing}
       />
 
@@ -219,8 +186,22 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {!isAnalyzing && analysisResult && (
+        {!isAnalyzing && (
           <>
+            {!hasData && (
+              <section className="glass-panel rounded-2xl border border-cyan-900/50 p-6 text-center shadow-2xl">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-950/80 text-cyan-400 ring-1 ring-cyan-800/70">
+                  <Upload className="h-6 w-6" />
+                </div>
+                <h2 className="text-lg font-bold text-slate-100">No CAN log loaded</h2>
+                <p className="mx-auto mt-1 max-w-2xl text-sm text-slate-400">
+                  Use <span className="font-semibold text-cyan-300">Open Log File</span> above to analyze a
+                  candump, CSV, or text capture. The analyzer controls remain visible below and will populate
+                  when packet data is loaded.
+                </p>
+              </section>
+            )}
+
             {/* Interactive Timeline Scrubber Bar with Drag-to-Select Region Window */}
             <TimelineControls
               buckets={analysisResult.buckets}
@@ -234,6 +215,7 @@ export const App: React.FC = () => {
               onSelectTimeWindow={handleSelectTimeWindow}
               onNextAnomaly={handleNextAnomaly}
               onPrevAnomaly={handlePrevAnomaly}
+              disabled={!hasData}
             />
 
             {/* Single Device Focus & Bus Rate Warning Threshold Bar */}

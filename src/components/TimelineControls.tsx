@@ -14,6 +14,7 @@ interface TimelineControlsProps {
   onSelectTimeWindow: (window: { startMs: number; endMs: number } | null) => void;
   onNextAnomaly: () => void;
   onPrevAnomaly: () => void;
+  disabled?: boolean;
 }
 
 export const TimelineControls: React.FC<TimelineControlsProps> = ({
@@ -28,6 +29,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
   onSelectTimeWindow,
   onNextAnomaly,
   onPrevAnomaly,
+  disabled = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -43,7 +45,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
 
   // Playback timer
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || disabled) return;
 
     const interval = setInterval(() => {
       onSeek(Math.min(displayEndMs, currentMs + 100 * playSpeed));
@@ -53,12 +55,12 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
     }, 50);
 
     return () => clearInterval(interval);
-  }, [isPlaying, playSpeed, currentMs, displayEndMs, onSeek]);
+  }, [isPlaying, playSpeed, currentMs, displayEndMs, onSeek, disabled]);
 
   // Draw visual timeline chart on Canvas
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || buckets.length === 0) return;
+    if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -79,6 +81,15 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
       ctx.stroke();
+    }
+
+    if (disabled || buckets.length === 0) {
+      ctx.fillStyle = '#64748b';
+      ctx.font = '500 14px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Open a CAN log to populate the timeline', width / 2, height / 2);
+      return;
     }
 
     const maxRate = Math.max(10, ...buckets.map((b) => b.packetRate));
@@ -144,7 +155,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
     ctx.lineTo(pointerX, 8);
     ctx.closePath();
     ctx.fill();
-  }, [buckets, anomalies, currentMs, progressRatio, displayStartMs, displayEndMs, displayDurationMs, focusedDevice, isSelecting, dragStartRatio, dragEndRatio]);
+  }, [buckets, anomalies, currentMs, progressRatio, displayStartMs, displayEndMs, displayDurationMs, focusedDevice, isSelecting, dragStartRatio, dragEndRatio, disabled]);
 
   const getRatioFromEvent = (e: React.MouseEvent<HTMLCanvasElement>): number => {
     const canvas = canvasRef.current;
@@ -155,6 +166,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (disabled) return;
     const ratio = getRatioFromEvent(e);
     setIsSelecting(true);
     setDragStartRatio(ratio);
@@ -162,13 +174,13 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isSelecting) return;
+    if (disabled || !isSelecting) return;
     const ratio = getRatioFromEvent(e);
     setDragEndRatio(ratio);
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isSelecting || dragStartRatio === null) return;
+    if (disabled || !isSelecting || dragStartRatio === null) return;
     const endRatio = getRatioFromEvent(e);
     setIsSelecting(false);
 
@@ -191,8 +203,10 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
     setDragEndRatio(null);
   };
 
-  const formattedTimestamp = new Date(currentMs).toISOString().replace('T', ' ').replace('Z', '');
-  const relativeSec = ((currentMs - displayStartMs) / 1000).toFixed(3);
+  const formattedTimestamp = disabled
+    ? 'No data loaded'
+    : new Date(currentMs).toISOString().replace('T', ' ').replace('Z', '');
+  const relativeSec = disabled ? '—' : `${((currentMs - displayStartMs) / 1000).toFixed(3)}s`;
 
   return (
     <div className="glass-panel rounded-2xl p-4 shadow-2xl mb-6">
@@ -226,7 +240,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             <Clock className="h-3.5 w-3.5 text-cyan-400" />
             <span className="text-slate-400">Pointer Time:</span>
             <span className="font-semibold text-slate-100">{formattedTimestamp}</span>
-            <span className="text-cyan-400 font-medium">({relativeSec}s)</span>
+            <span className="text-cyan-400 font-medium">({relativeSec})</span>
           </div>
 
           {focusedDevice ? (
@@ -247,14 +261,16 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={onPrevAnomaly}
-            className="flex items-center gap-1 rounded-lg bg-amber-950/60 px-2.5 py-1 text-xs font-medium text-amber-300 border border-amber-800/60 hover:bg-amber-900/80 transition-colors"
+            disabled={disabled || anomalies.length === 0}
+            className="flex items-center gap-1 rounded-lg bg-amber-950/60 px-2.5 py-1 text-xs font-medium text-amber-300 border border-amber-800/60 hover:bg-amber-900/80 transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-amber-950/60"
           >
             <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
             <span>Prev Issue</span>
           </button>
           <button
             onClick={onNextAnomaly}
-            className="flex items-center gap-1 rounded-lg bg-amber-950/60 px-2.5 py-1 text-xs font-medium text-amber-300 border border-amber-800/60 hover:bg-amber-900/80 transition-colors"
+            disabled={disabled || anomalies.length === 0}
+            className="flex items-center gap-1 rounded-lg bg-amber-950/60 px-2.5 py-1 text-xs font-medium text-amber-300 border border-amber-800/60 hover:bg-amber-900/80 transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-amber-950/60"
           >
             <span>Next Issue</span>
             <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
@@ -272,7 +288,7 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          className="w-full h-20 block select-none"
+          className={`w-full h-20 block select-none ${disabled ? 'cursor-default' : 'cursor-crosshair'}`}
         />
         <div className="absolute bottom-1 right-2 pointer-events-none text-[10px] text-slate-500 font-mono">
           Click or Drag across timeline to select region window
@@ -284,14 +300,16 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={() => onSeek(displayStartMs)}
-            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800"
+            disabled={disabled}
+            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
             title="Jump to Start of Window"
           >
             <RotateCcw className="h-4 w-4" />
           </button>
           <button
             onClick={() => onSeek(Math.max(displayStartMs, currentMs - 1000))}
-            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800"
+            disabled={disabled}
+            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
             title="-1s"
           >
             <SkipBack className="h-4 w-4" />
@@ -303,14 +321,16 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
               }
               setIsPlaying(!isPlaying);
             }}
-            className="flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-1.5 text-xs font-semibold text-white shadow-lg shadow-cyan-600/30 hover:bg-cyan-500 active:scale-95 transition-all"
+            disabled={disabled}
+            className="flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-1.5 text-xs font-semibold text-white shadow-lg shadow-cyan-600/30 hover:bg-cyan-500 active:scale-95 transition-all disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
           >
             {isPlaying ? <Pause className="h-4 w-4 fill-white" /> : <Play className="h-4 w-4 fill-white ml-0.5" />}
             <span>{isPlaying ? 'Pause' : 'Play Timeline'}</span>
           </button>
           <button
             onClick={() => onSeek(Math.min(displayEndMs, currentMs + 1000))}
-            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800"
+            disabled={disabled}
+            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
             title="+1s"
           >
             <SkipForward className="h-4 w-4" />
@@ -324,9 +344,10 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
             <button
               key={spd}
               onClick={() => setPlaySpeed(spd)}
+              disabled={disabled}
               className={`px-2 py-0.5 rounded font-mono font-medium transition-colors ${
                 playSpeed === spd ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
-              }`}
+              } disabled:cursor-not-allowed disabled:opacity-40`}
             >
               {spd}x
             </button>

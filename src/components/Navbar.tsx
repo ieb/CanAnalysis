@@ -1,20 +1,16 @@
 import React, { useRef } from 'react';
-import { Activity, Upload, Database, FileText, AlertCircle, Cpu, Clock, CheckCircle2 } from 'lucide-react';
+import { Activity, Upload, FileText, AlertCircle, Cpu, Clock } from 'lucide-react';
 import { AnalysisSummary } from '../types/n2k';
 
 interface NavbarProps {
   summary: AnalysisSummary | null;
-  selectedFileName: string;
   onFileUpload: (file: File) => void;
-  onLoadPreloaded: (datasetKey: 'startup3.log' | 'startup2.log') => void;
   isAnalyzing: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   summary,
-  selectedFileName,
   onFileUpload,
-  onLoadPreloaded,
   isAnalyzing,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,34 +73,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
-          {/* Quick-load dataset dropdown */}
-          <div className="flex items-center gap-1 bg-slate-900 rounded-lg p-1 border border-slate-800">
-            <button
-              onClick={() => onLoadPreloaded('startup3.log')}
-              disabled={isAnalyzing}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                selectedFileName === 'startup3.log'
-                  ? 'bg-cyan-600 text-white shadow-sm'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-              title="candump2analyse CSV dataset"
-            >
-              startup3.log (CSV)
-            </button>
-            <button
-              onClick={() => onLoadPreloaded('startup2.log')}
-              disabled={isAnalyzing}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                selectedFileName === 'startup2.log'
-                  ? 'bg-cyan-600 text-white shadow-sm'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-              title="candump raw log dataset"
-            >
-              startup2.log (Raw)
-            </button>
-          </div>
-
           <input
             type="file"
             ref={fileInputRef}

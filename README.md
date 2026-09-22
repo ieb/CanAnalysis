@@ -106,8 +106,8 @@ git push origin pages
 
 ### 1. Loading Datasets
 
-- **Preloaded Datasets**: Click **startup3.log (CSV)** or **startup2.log (Raw)** in the top navigation bar to instantly load included sample captures.
-- **Custom Log Files**: Click **Open Log File** to load your own CAN bus capture file (`.log`, `.txt`, or `.csv`).
+- Click **Open Log File** to load your own CAN bus capture file (`.log`, `.txt`, or `.csv`).
+- Until a file is loaded, the analyzer displays its controls in an empty state without packet or device data.
 
 ### 2. Timeline Scrubbing & Playback
 
@@ -135,9 +135,7 @@ git push origin pages
 
 ```
 CanAnalysis/
-├── datasets/             # Sample CAN bus log datasets (startup2.log, startup3.log)
 ├── docs/                 # Initial specification & N2K reference HTML
-├── public/               # Static assets & preloaded datasets
 ├── src/
 │   ├── components/       # React UI components
 │   │   ├── Navbar.tsx            # Navigation bar & dataset controls
