@@ -46,7 +46,7 @@ export const App: React.FC = () => {
     setSelectedFileName(name);
     setTimeWindow(null);
     try {
-      const response = await fetch(`/datasets/${name}`);
+      const response = await fetch(`${import.meta.env.BASE_URL}datasets/${name}`);
       if (!response.ok) {
         throw new Error(`HTTP error ${response.status}`);
       }

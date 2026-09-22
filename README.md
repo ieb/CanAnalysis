@@ -80,6 +80,26 @@ To preview the built production bundle locally:
 npm run preview
 ```
 
+### Pages Distribution
+
+To build the application and create or update a local `pages` branch:
+
+```bash
+npm run build:pages
+```
+
+The `pages` branch is an orphan distribution branch containing only the generated
+contents of `dist`, with `index.html` at the branch root. The script uses a
+temporary Git index, so it does not switch branches or alter the working tree.
+Vite generates relative asset URLs, allowing the site to work when hosted below
+a repository path.
+
+Publish the branch when ready:
+
+```bash
+git push origin pages
+```
+
 ---
 
 ## User Guide
